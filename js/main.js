@@ -25,6 +25,7 @@ const editPhotoURL = document.querySelector('.edit-photo');
 
 const userAvatarElem = document.querySelector('.user-avatar');
 const postsWrapper = document.querySelector('.posts');
+const buttonNewPost = document.querySelector('.button-new-post');
 
 
 const listUsers = [
@@ -32,13 +33,13 @@ const listUsers = [
         id: '01',
         email: 'den@mail.com',
         password: '12345',
-        displayName: 'DenJS'
+        displayName: 'den'
     },
     {
         id: '02',
         email: 'nastya@mail.com',
         password: '12345',
-        displayName: 'AnastasiaCSS'
+        displayName: 'nastya'
     }
 ];
 
@@ -87,38 +88,38 @@ const setUsers = {
         if(userName){
             this.user.displayName = userName;
         }
-        if(userPhoto){
+        if(userPhoto) {
             this.user.photo = userPhoto;
         }
         handler();
     },
-    autorizedUser(user){
+    autorizedUser(user) {
         this.user = user;
     }
 };
+
 const setPosts = {
-    allPost: [
+    allPosts: [
         {
             title: 'Заголовок поста',
             text: 'Абракадабра',
             tags: ['свежее', 'новое', 'горячее', 'мое', 'случайность'],
-            author: 'email@email.ru',
+            author: {displayName: 'den', photo: 'https://krot.info/uploads/posts/2019-09/1569316327_mjettju-makkonahi-50.jpg'},
             date: '11.11.2020',
-            like: 45,
-            comments: 12
+            like: 40,
+            comments: 4
         },
         {
-            title: 'Заголовок поста',
+            title: 'Заголовок поста2',
             text: 'Абракадабра',
-            tags: ['свежее', 'новое', 'горячее', 'мое', 'случайность'],
-            author: 'mail@mail.ru',
+            tags: ['свежее', 'новое', 'мое', 'случайность'],
+            author: {displayName: 'den', photo: 'https://krot.info/uploads/posts/2019-09/1569316327_mjettju-makkonahi-50.jpg'},
             date: '11.11.2020',
             like: 45,
             comments: 12
         },
     ]
 }
-
 
 const toggleAuthDom = () => {
     const user = setUsers.user;
@@ -128,27 +129,79 @@ const toggleAuthDom = () => {
         userElem.style.display = '';
         userNameElem.textContent = user.displayName;
         userAvatarElem.src = user.photo || userAvatarElem.src;
+        buttonNewPost.classList.add('visible');
     } else {
         loginElem.style.display = '';
         userElem.style.display = 'none';
+        buttonNewPost.classList.remove('visible')
 
     }
 }
 
-
 const showAllPosts = () => {
-    postsWrapper.innerHTML = 'тут могла быть ваша реклама'
-}
+
+    let postsHTML = '';
+
+    setPosts.allPosts.forEach( ({title, text, date, tags, like, comments, author}) => {
+        postsHTML += `
+        <section class="post">
+        <div class="post-body">
+          <h2 class="post-title">${title}</h2>
+          <p class="post-text">${text}</p>
+          
+          <div class="tags">
+            ${tags.map(tag => `<a href="#" class="tag">#${tag}</a>`)}
+            
+            
+          </div>
+       
+        </div>
+       
+        <div class="post-footer">
+          <div class="post-buttons">
+            <button class="post-button likes">
+              <svg width="19" height="20" class="icon icon-like">
+                <use xlink:href="img/icons.svg#like"></use>
+              </svg>
+              <span class="likes-counter">${like}</span>
+            </button>
+            <button class="post-button comments">
+              <svg width="21" height="21" class="icon icon-comment">
+                <use xlink:href="img/icons.svg#comment"></use>
+              </svg>
+              <span class="comments-counter">${comments}</span>
+            </button>
+            <button class="post-button save">
+              <svg width="19" height="19" class="icon icon-save">
+                <use xlink:href="img/icons.svg#save"></use>
+              </svg>
+            </button>
+            <button class="post-button share">
+              <svg width="17" height="19" class="icon icon-share">
+                <use xlink:href="img/icons.svg#share"></use>
+              </svg>
+            </button>
+          </div>
+         
+          <div class="post-author">
+            <div class="author-about">
+              <a href="#" class="author-username">${author.displayName}</a>
+              <span class="post-time">${date}</span>
+            </div>
+            <a href="#" class="author-link"><img src=${author.photo || "img/avatar.jpeg"} alt="avatar" class="author-avatar"></a>
+          </div>
+         
+        </div>
+      
+      </section>
+        `;
+    })
+
+    postsWrapper.innerHTML = postsHTML;
+};
 
 const init = () => {
-    // отслеживаем клик по кнопке меню и запускаем функцию 
-menuToggle.addEventListener('click', function (event) {
-    // отменяем стандартное поведение ссылки
-    event.preventDefault();
-    // вешаем класс на меню, когда кликнули по кнопке меню 
-    menu.classList.toggle('visible');
-});
-    
+
     loginForm.addEventListener('submit', (event) => {
         event.preventDefault();
         
@@ -188,8 +241,14 @@ menuToggle.addEventListener('click', function (event) {
         editContainer.classList.remove('visible');
     });
 
+    menuToggle.addEventListener('click', function (event) {
+        event.preventDefault();
+        menu.classList.toggle('visible');
+    });
+
+
     showAllPosts();
     toggleAuthDom();    
 }
 
-document.addEventListener('DomContentLoaded', init)
+document.addEventListener('DOMContentLoaded', init)
