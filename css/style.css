@@ -471,7 +471,8 @@ body {
 
 
 .add-title,
-.add-text {
+.add-text,
+.add-tags {
   background: #ffffff;
   border: 1px solid #e8e8e8;
   padding: 23px 30px;
