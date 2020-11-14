@@ -9,11 +9,10 @@ const firebaseConfig = {
 };
 firebase.initializeApp(firebaseConfig);
 
-console.log('firebase: ', firebase);
-
-
 let menuToggle = document.querySelector('#menu-toggle');
 let menu = document.querySelector('.sidebar');
+
+const defaultPhoto = userAvatarElem.src;
 
 const regExpValidEmail = /^\w+@\w+\.\w{2,}$/;
 
@@ -34,44 +33,51 @@ const postsWrapper = document.querySelector('.posts');
 const buttonNewPost = document.querySelector('.button-new-post');
 const addPostElem = document.querySelector('.add-post');
 
-
-const listUsers = [
-    {
-        id: '01',
-        email: 'den@mail.com',
-        password: '12345',
-        displayName: 'den'
-    },
-    {
-        id: '02',
-        email: 'nastya@mail.com',
-        password: '12345',
-        displayName: 'nastya'
-    }
-];
-
 const setUsers = {
     user: null,
+    initUser(handler){
+        firebase.auth().onAuthStateChanged(user => {
+            if(user) {
+                this.user = user;
+            } else {
+                this.user = null;
+            }
+            if (handler) handler();
+        })
+    },
     logIn(email, password, handler) {
         if (!regExpValidEmail.test(email)) {
             alert('email не валиден');
             return;
         }
-        const user = this.getUser(email);
-        if (user && user.password === password){
-            this.autorizedUser(user);
-            if (handler){
-                handler();
-            }
-        } else {
-            alert('Пользователь с такими данными не найден')
-        }
+
+        firebase.auth().signInWithEmailAndPassword(email, password)
+            .catch(err => {
+                const errCode = err.code;
+                const errMessage = err.message;
+                if(errCode === 'auth/wrong-password') {
+                    alert('Неверный пароль')
+                } else if (errCode === 'auth/user-not-found') {
+                    alert('Пользователь не найден');
+                } else {
+                    alert(errMessage);
+                }
+
+                console.log(err);
+            }) 
+
+        // const user = this.getUser(email);
+        // if (user && user.password === password){
+        //     this.autorizedUser(user);
+        //     if (handler){
+        //         handler();
+        //     }
+        // } else {
+        //     alert('Пользователь с такими данными не найден')
+        // }
     },
-    logOut(handler) {
-        this.user = null;
-        if (handler){
-            handler();
-        }
+    logOut() {
+        firebase.auth().signOut();
     }, 
     signUp(email, password, handler) {
         if (!regExpValidEmail.test(email)) {
@@ -83,74 +89,108 @@ const setUsers = {
             return; 
         }
         
-        if(!this.getUser(email)){
-            const user = { email, password, displayName: email.substring(0, email.indexOf('@')) };
-            listUsers.push(user);
-            this.autorizedUser(user);
-            if (handler){
-                handler();
+        firebase.auth().createUserWithEmailAndPasword(email, password)
+            .then((data) => {
+                this.editUser(email.substring(0, email.indexOf('@')), null, handler)
+            })
+            .catch((err) => {
+                const errCode = err.code;
+                const errMessage = err.message;
+                if(errCode === 'auth/weak-password') {
+                    alert('Слабый пароль')
+                } else if (errCode === 'auth/email-already-in-use') {
+                    alert('Этот email уже используется');
+                } else {
+                    alert(errMessage);
+                }
+
+                console.log(err);
+            });
+
+
+        // if(!this.getUser(email)){
+        //     const user = { email, password, displayName: email.substring(0, email.indexOf('@')) };
+        //     listUsers.push(user);
+        //     this.autorizedUser(user);
+        //     if (handler){
+        //         handler();
+        //     }
+        // } else {
+        //     alert('Пользователь с таким именем уже зарегестирован')
+        // }
+    },
+    // getUser(email) {
+    //     return listUsers.find(item => item.email === email )
+    // },
+    editUser(displayName, photoURL, handler){
+
+        const user = firebase.auth().currentUser;
+
+        if(displayName){
+            if(photoURL) {
+               user.updateProfile({
+                   displayName,
+                   photoURL
+               }).then(handler)
+            } else {
+                user.updateProfile({
+                    displayName
+                }).then(handler)
             }
-        } else {
-            alert('Пользователь с таким именем уже зарегестирован')
         }
     },
-    getUser(email) {
-        return listUsers.find(item => item.email === email )
-    },
-    editUser(userName, userPhoto, handler){
-        if(userName){
-            this.user.displayName = userName;
-        }
-        if(userPhoto) {
-            this.user.photo = userPhoto;
-        }
-        if (handler){
-            handler();
-        }
-    },
-    autorizedUser(user) {
-        this.user = user;
+    // autorizedUser(user) {
+    //     this.user = user;
+    // }
+    sendForget(email) {
+        firebase.auth().sendPasswordResetEmail(email)
+            .then(()=> {
+                alert('Письмо отправлено')
+            })
+            .catch(err => {
+                console.log(err)
+            })
     }
 };
 
+const loginForget = document.querySelector('.login-forget');
+
+loginForget.addEventListener('click', event => {
+    event.preventDefault();
+
+    setUsers.sendForget(emailInput.value);
+    emailInput.value = '';
+})
+
 const setPosts = {
-    allPosts: [
-        {
-            title: 'Заголовок поста',
-            text: 'Абракадабра',
-            tags: ['свежее', 'новое', 'горячее', 'мое', 'случайность'],
-            author: {displayName: 'den', photo: 'https://krot.info/uploads/posts/2019-09/1569316327_mjettju-makkonahi-50.jpg'},
-            date: '11.11.2020',
-            like: 40,
-            comments: 4
-        },
-        {
-            title: 'Заголовок поста2',
-            text: 'Абракадабра',
-            tags: ['свежее', 'новое', 'мое', 'случайность'],
-            author: {displayName: 'den', photo: 'https://krot.info/uploads/posts/2019-09/1569316327_mjettju-makkonahi-50.jpg'},
-            date: '11.11.2020',
-            like: 45,
-            comments: 12
-        },
-    ],
+    allPosts: [],
     addPost(title, text, tags, handler){
+
+        const user = firebase.auth().currentUser;
+
         this.allPosts.unshift({
+            id: `postID${(+new Date()).toString(16)}-${user.uid}`,
             title, 
             text, 
             tags: tags.split(',').map(item => item.trim()), 
             author: {
                 displayName: setUsers.user.displayName,
-                photo: setUsers.user.photo,
+                photo: setUsers.user.photoURL,
             }, 
             date: new Date().toLocaleString(), 
             like: 0, 
             comments: 0,
         })
 
-        if (handler){
+        firebase.database().ref('post').set(this.allPosts)
+            .then(()=> this.getPosts(handler))
+            
+    },
+    getPosts(handler) {
+        firebase.database().ref('post').on('value', snapshot => {
+            this.allPosts = snapshot.val() || [];
             handler();
-        }
+        })
     }
 }
 
@@ -161,7 +201,7 @@ const toggleAuthDom = () => {
         loginElem.style.display = 'none';
         userElem.style.display = '';
         userNameElem.textContent = user.displayName;
-        userAvatarElem.src = user.photo || userAvatarElem.src;
+        userAvatarElem.src = user.photoURL || defaultPhoto;
         buttonNewPost.classList.add('visible');
     } else {
         loginElem.style.display = '';
@@ -179,11 +219,9 @@ const showAddPost = () => {
 
 const showAllPosts = () => {
 
-
-
     let postsHTML = '';
 
-    setPosts.allPosts.forEach( ({title, text, date, tags, like, comments, author}) => {
+    setPosts.allPosts.forEach(({title, text, date, tags, like, comments, author}) => {
         postsHTML += `
         <section class="post">
             <div class="post-body">
@@ -218,7 +256,6 @@ const showAllPosts = () => {
                     </svg>
                     </button>
                 </div>
-            
                 <div class="post-author">
                     <div class="author-about">
                         <a href="#" class="author-username">${author.displayName}</a>
@@ -261,8 +298,7 @@ const init = () => {
 
     exitElem.addEventListener('click', (event) => {
         event.preventDefault();
-        setUsers.logOut(toggleAuthDom);    
-
+        setUsers.logOut();    
     });
 
     editElem.addEventListener('click', (event) => {
@@ -304,13 +340,9 @@ const init = () => {
 
         addPostElem.classList.remove('visible');
         addPostElem.reset();
-
-
-
-    })
-
-    showAllPosts();
-    toggleAuthDom();    
+    });
+    setUsers.initUser(toggleAuthDom);
+    setPosts.getPosts(showAllPosts);
 }
 
 document.addEventListener('DOMContentLoaded', init)
